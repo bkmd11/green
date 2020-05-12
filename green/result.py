@@ -60,6 +60,8 @@ class ProtoTest():
         # different than regular test cases in many ways, so they get special
         # treatment inside and outside of this class.
         self.is_doctest = False
+        # Teardown handling is a royal mess
+        self.is_class_or_module_teardown_error = False
 
         if test is ProtoTestResult:
             print(type(test))
@@ -118,11 +120,13 @@ class ProtoTest():
 
     @property
     def dotted_name(self, ignored=None):
-        if self.is_doctest:
+        if self.is_doctest or self.is_class_or_module_teardown_error:
             return self.name
         return self.module + '.' + self.class_name + '.' + self.method_name + self.subtest_part
 
     def getDescription(self, verbose):
+        if self.is_class_or_module_teardown_error:
+            return self.name
         if verbose == 2:
             if self.is_doctest:
                 return self.name
