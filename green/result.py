@@ -55,18 +55,12 @@ class ProtoTest():
         self.method_name = ''
         self.docstr_part = ''
         self.subtest_part = ''
-        self.test_time = ''
         # We need to know that this is a doctest, because doctests are very
         # different than regular test cases in many ways, so they get special
         # treatment inside and outside of this class.
         self.is_doctest = False
         # Teardown handling is a royal mess
         self.is_class_or_module_teardown_error = False
-
-        if test is ProtoTestResult:
-            print(type(test))
-        if getattr(test, 'test_time', None):
-            self.test_time = test.test_time
 
         # Is this a subtest?
         if getattr(test, '_subDescription', None):
@@ -230,7 +224,6 @@ class ProtoTestResult(BaseTestResult):
                 'stderr_errput',
                 'stdout_output',
                 'unexpectedSuccesses',
-                'test_time'
                 ]
         self.failfast = False  # Because unittest inspects the attribute
         self.reinitialize()
@@ -243,8 +236,6 @@ class ProtoTestResult(BaseTestResult):
         self.passing             = []
         self.skipped             = []
         self.unexpectedSuccesses = []
-        self.test_time = ''
-
 
     def __repr__(self):  # pragma: no cover
         return (
@@ -253,8 +244,7 @@ class ProtoTestResult(BaseTestResult):
             "failures" + str(self.failures) + ', ' +
             "passing" + str(self.passing) + ', ' +
             "skipped" + str(self.skipped) + ', ' +
-            "unexpectedSuccesses" + str(self.unexpectedSuccesses) + ', ' +
-            "test_time" + str(self.test_time))
+            "unexpectedSuccesses" + str(self.unexpectedSuccesses))
 
     def __getstate__(self):
         """
@@ -281,13 +271,12 @@ class ProtoTestResult(BaseTestResult):
         self.reinitialize()
         if self.start_callback:
             self.start_callback(test)
-        self.start_time = time.time()
 
     def stopTest(self, test):
         """
         Called after each test runs
         """
-        self.test_time = time.time() - self.start_time
+        pass
 
     def finalize(self):
         """
@@ -339,7 +328,6 @@ class ProtoTestResult(BaseTestResult):
     def addSubTest(self, test, subtest, err):
         """
         Called at the end of a subtest no matter its result.
-
         The test that runs the subtests is calls the other test methods to
         record its own result.  We use this method to record each subtest as a
         separate test result.  It's very meta.
@@ -400,7 +388,6 @@ class GreenTestResult(BaseTestResult):
             self.recordStderr(test, proto_test_result.stderr_errput[test])
 
     def addProtoTestResult(self, proto_test_result):
-        print(proto_test_result)
         for test, err in proto_test_result.errors:
             self.addError(test, err)
             self.tryRecordingStdoutStderr(test, proto_test_result)
@@ -411,7 +398,7 @@ class GreenTestResult(BaseTestResult):
             self.addFailure(test, err)
             self.tryRecordingStdoutStderr(test, proto_test_result)
         for test in proto_test_result.passing:
-            self.addSuccess(test, proto_test_result.test_time)
+            self.addSuccess(test)
             self.tryRecordingStdoutStderr(test, proto_test_result)
         for test, reason in proto_test_result.skipped:
             self.addSkip(test, reason)
@@ -559,13 +546,11 @@ class GreenTestResult(BaseTestResult):
             self.stream.write(color_func(outcome_char))
             self.stream.flush()
 
-    def addSuccess(self, test, test_time=None):
+    def addSuccess(self, test):
         """
         Called when a test passed
         """
         test = proto_test(test)
-        if test_time:
-            test.test_time = str(test_time)
         self.passing.append(test)
         self._reportOutcome(test, '.', self.colors.passing)
 
